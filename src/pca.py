@@ -17,9 +17,7 @@ sns.set_theme(style='whitegrid')
 def save_and_show(fig, filename):
 	output_path = OUTPUT_DIR / filename
 	fig.savefig(output_path, dpi=150, bbox_inches='tight')
-	plt.show()
 	plt.close(fig)
-	print(f'Gráfico guardado en {output_path}')
 
 # 1. Cargar el dataset
 # Es buena práctica setear el país como índice para no perder la etiqueta al transformar la matriz
@@ -53,19 +51,37 @@ save_and_show(fig, 'correlation_matrix_heatmap.png')
 pca = PCA()
 pca.fit(df_scaled)
 
-# Extraemos la proporción de la varianza que explica la primera componente
+# Proporción de varianza explicada por las primeras componentes
 var_explicada_pc1 = pca.explained_variance_ratio_[0] * 100
+var_explicada_pc2 = pca.explained_variance_ratio_[1] * 100
 print(f"La PC1 explica el {var_explicada_pc1:.2f}% de la varianza total de los datos.")
+print(f"La PC2 explica el {var_explicada_pc2:.2f}% de la varianza total de los datos.")
+
+print("\n--- Autovalores de las primeras componentes ---")
+for i, val in enumerate(pca.explained_variance_[:5], start=1):
+	print(f"Autovalor PC{i}: {val:.6f}")
 
 # 4. Extraer los loadings de la PC1 (los coeficientes del primer autovector)
 loadings_pc1 = pd.Series(pca.components_[0], index=df.columns).sort_values(ascending=False)
+loadings_pc2 = pd.Series(pca.components_[1], index=df.columns).sort_values(ascending=False)
 
 print("\n--- Cargas (Loadings) de la PC1 ---")
 print(loadings_pc1)
 
+print("\n--- Cargas (Loadings) de la PC2 ---")
+print(loadings_pc2)
+
 # Graficamos los loadings para entender visualmente la influencia de cada variable
 fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(x=loadings_pc1.values, y=loadings_pc1.index, palette="viridis", ax=ax)
+sns.barplot(
+	x=loadings_pc1.values,
+	y=loadings_pc1.index,
+	hue=loadings_pc1.index,
+	palette="viridis",
+	dodge=False,
+	legend=False,
+	ax=ax,
+)
 ax.set_title('Pesos de las variables originales en la PC1')
 ax.set_xlabel('Carga (Loading)')
 ax.set_ylabel('Variable')
@@ -81,7 +97,16 @@ df_sorted = df.sort_values(by='PC1', ascending=False)
 
 # 6. Gráfico de barras de la PC1 por país
 fig, ax = plt.subplots(figsize=(12, 8))
-sns.barplot(x='PC1', y=df_sorted.index, data=df_sorted, palette="coolwarm", ax=ax)
+sns.barplot(
+	x='PC1',
+	y=df_sorted.index,
+	hue=df_sorted.index,
+	data=df_sorted,
+	palette="coolwarm",
+	dodge=False,
+	legend=False,
+	ax=ax,
+)
 ax.set_title('Ranking de Países Europeos según la PC1')
 ax.set_xlabel('Valor de la Componente Principal 1')
 ax.set_ylabel('País')
