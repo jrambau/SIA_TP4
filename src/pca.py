@@ -14,10 +14,10 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 sns.set_theme(style='whitegrid')
 
-def save_and_show(fig, filename):
+def save_output(fig, filename):
 	output_path = OUTPUT_DIR / filename
 	fig.savefig(output_path, dpi=150, bbox_inches='tight')
-	plt.close(fig)
+	print(f'Gráfico guardado en {output_path}')
 
 # 1. Cargar el dataset
 # Es buena práctica setear el país como índice para no perder la etiqueta al transformar la matriz
@@ -25,14 +25,14 @@ df = pd.read_csv(DATA_PATH)
 df.set_index('Country', inplace=True)
 
 # 2. Estandarizar las variables (Paso fundamental)
-scaler = StandardScaler()
+scaler = StandardScaler() #Standardize features by removing the mean and scaling to unit variance, (x - mean) / std
 X_scaled = scaler.fit_transform(df)
 
 # Volvemos a armar un DataFrame para mantener la prolijidad con los nombres de las columnas
 df_scaled = pd.DataFrame(X_scaled, columns=df.columns, index=df.index)
 
 # Matriz de correlaciones (originales)
-corr = df.corr()
+corr = df.corr() #Matriz de correlaciones entre variables
 print("\n--- Matriz de correlaciones ---")
 print(corr.round(3))
 # Guardar la matriz en CSV
@@ -43,7 +43,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", square=True, cbar_kws={'shrink': .8}, ax=ax)
 ax.set_title('Matriz de correlaciones de variables')
 fig.tight_layout()
-save_and_show(fig, 'correlation_matrix_heatmap.png')
+save_output(fig, 'correlation_matrix_heatmap.png')
 
 # 3. Instanciar y ajustar el modelo PCA
 # Como solo nos piden interpretar la PC1, podríamos pasarle n_components=1, 
@@ -68,26 +68,19 @@ loadings_pc2 = pd.Series(pca.components_[1], index=df.columns).sort_values(ascen
 print("\n--- Cargas (Loadings) de la PC1 ---")
 print(loadings_pc1)
 
+loadings_pc2 = pd.Series(pca.components_[1], index=df.columns).sort_values(ascending=False)
 print("\n--- Cargas (Loadings) de la PC2 ---")
 print(loadings_pc2)
 
 # Graficamos los loadings para entender visualmente la influencia de cada variable
 fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(
-	x=loadings_pc1.values,
-	y=loadings_pc1.index,
-	hue=loadings_pc1.index,
-	palette="viridis",
-	dodge=False,
-	legend=False,
-	ax=ax,
-)
+sns.barplot(x=loadings_pc1.values, y=loadings_pc1.index, hue=loadings_pc1.index, palette="viridis", ax=ax, legend=False)
 ax.set_title('Pesos de las variables originales en la PC1')
 ax.set_xlabel('Carga (Loading)')
 ax.set_ylabel('Variable')
 ax.grid(axis='x', linestyle='--', alpha=0.7)
 fig.tight_layout()
-save_and_show(fig, 'pc1_loadings.png')
+save_output(fig, 'pc1_loadings.png')
 
 # 5. Calcular los valores de la PC1 para cada país
 df['PC1'] = pca.transform(df_scaled)[:, 0]
@@ -97,23 +90,14 @@ df_sorted = df.sort_values(by='PC1', ascending=False)
 
 # 6. Gráfico de barras de la PC1 por país
 fig, ax = plt.subplots(figsize=(12, 8))
-sns.barplot(
-	x='PC1',
-	y=df_sorted.index,
-	hue=df_sorted.index,
-	data=df_sorted,
-	palette="coolwarm",
-	dodge=False,
-	legend=False,
-	ax=ax,
-)
+sns.barplot(x='PC1', y=df_sorted.index, data=df_sorted, hue=df_sorted.index, palette="coolwarm", ax=ax, legend=False)
 ax.set_title('Ranking de Países Europeos según la PC1')
 ax.set_xlabel('Valor de la Componente Principal 1')
 ax.set_ylabel('País')
 ax.axvline(0, color='black', linewidth=1)
 ax.grid(axis='x', linestyle='--', alpha=0.7)
 fig.tight_layout()
-save_and_show(fig, 'pc1_ranking_paises.png')
+save_output(fig, 'pc1_ranking_paises.png')
 
 # 7. Biplot usando las dos primeras componentes principales
 scores = pca.transform(df_scaled)[:, :2]
@@ -144,4 +128,4 @@ ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)')
 ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)')
 ax.grid(True, linestyle='--', alpha=0.5)
 fig.tight_layout()
-save_and_show(fig, 'pc1_pc2_biplot.png')
+save_output(fig, 'pc1_pc2_biplot.png')
