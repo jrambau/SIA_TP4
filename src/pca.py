@@ -14,11 +14,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 sns.set_theme(style='whitegrid')
 
-def save_and_show(fig, filename):
+def save_output(fig, filename):
 	output_path = OUTPUT_DIR / filename
 	fig.savefig(output_path, dpi=150, bbox_inches='tight')
-	plt.show()
-	plt.close(fig)
 	print(f'Gráfico guardado en {output_path}')
 
 # 1. Cargar el dataset
@@ -45,7 +43,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", square=True, cbar_kws={'shrink': .8}, ax=ax)
 ax.set_title('Matriz de correlaciones de variables')
 fig.tight_layout()
-save_and_show(fig, 'correlation_matrix_heatmap.png')
+save_output(fig, 'correlation_matrix_heatmap.png')
 
 # 3. Instanciar y ajustar el modelo PCA
 # Como solo nos piden interpretar la PC1, podríamos pasarle n_components=1, 
@@ -71,7 +69,7 @@ ax.set_xlabel('Carga (Loading)')
 ax.set_ylabel('Variable')
 ax.grid(axis='x', linestyle='--', alpha=0.7)
 fig.tight_layout()
-save_and_show(fig, 'pc1_loadings.png')
+save_output(fig, 'pc1_loadings.png')
 
 # 5. Calcular los valores de la PC1 para cada país
 df['PC1'] = pca.transform(df_scaled)[:, 0]
@@ -88,7 +86,7 @@ ax.set_ylabel('País')
 ax.axvline(0, color='black', linewidth=1)
 ax.grid(axis='x', linestyle='--', alpha=0.7)
 fig.tight_layout()
-save_and_show(fig, 'pc1_ranking_paises.png')
+save_output(fig, 'pc1_ranking_paises.png')
 
 # 7. Biplot usando las dos primeras componentes principales
 scores = pca.transform(df_scaled)[:, :2]
@@ -119,4 +117,4 @@ ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)')
 ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)')
 ax.grid(True, linestyle='--', alpha=0.5)
 fig.tight_layout()
-save_and_show(fig, 'pc1_pc2_biplot.png')
+save_output(fig, 'pc1_pc2_biplot.png')
