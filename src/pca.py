@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from adjustText import adjust_text
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
@@ -110,15 +111,58 @@ loading_y = loadings[:, 1]
 
 scale_x = (score_x.max() - score_x.min()) * 0.35
 scale_y = (score_y.max() - score_y.min()) * 0.35
+country_positions = list(zip(df.index, score_x, score_y))
+country_refs = {position + 1: country for position, (country, _, _) in enumerate(country_positions)}
 
 fig, ax = plt.subplots(figsize=(12, 9))
 ax.scatter(score_x, score_y, color='steelblue', alpha=0.7, s=45)
 
-for country, x_coord, y_coord in zip(df.index, score_x, score_y):
-	ax.annotate(country, (x_coord, y_coord), xytext=(4, 4), textcoords='offset points', fontsize=8, alpha=0.8)
+fig.subplots_adjust(right=0.80)
+
+country_labels = []
+for ref_number, (country, x_coord, y_coord) in enumerate(country_positions, start=1):
+	label = ax.text(
+		x_coord,
+		y_coord,
+		str(ref_number),
+		fontsize=7,
+		fontweight='bold',
+		color='black',
+		ha='center',
+		va='center',
+		bbox=dict(facecolor='white', alpha=0.85, edgecolor='none', boxstyle='round,pad=0.15'),
+	)
+	country_labels.append(label)
+
+adjust_text(
+	country_labels,
+	ax=ax,
+	force_text=(0.4, 0.6),
+	force_points=(0.2, 0.3),
+	expand_text=(1.05, 1.1),
+	expand_points=(1.05, 1.1),
+	only_move={'text': 'xy', 'points': 'xy', 'objects': 'xy'},
+	lim=250,
+	ensure_inside_axes=True,
+)
+
+legend_x_left = 0.79
+legend_x_right = 0.90
+legend_y_start = 0.88
+legend_line_step = 0.022
+half = (len(country_refs) + 1) // 2
+left_items = list(country_refs.items())[:half]
+right_items = list(country_refs.items())[half:]
+
+fig.text(legend_x_left, legend_y_start + 0.03, 'Referencias', fontsize=9, fontweight='bold', ha='left', va='top')
+for row_index, (ref_number, country) in enumerate(left_items):
+	fig.text(legend_x_left, legend_y_start - row_index * legend_line_step, f'{ref_number}. {country}', fontsize=6.5, ha='left', va='top')
+
+for row_index, (ref_number, country) in enumerate(right_items):
+	fig.text(legend_x_right, legend_y_start - row_index * legend_line_step, f'{ref_number}. {country}', fontsize=6.5, ha='left', va='top')
 
 for variable, x_loading, y_loading in zip(df.columns, loading_x, loading_y):
-	ax.arrow(0, 0, x_loading * scale_x, y_loading * scale_y, color='darkred', alpha=0.8, head_width=0.08, length_includes_head=True)
+	ax.arrow(0, 0, x_loading * scale_x, y_loading * scale_y, color='darkred', alpha=0.75, head_width=0.06, length_includes_head=True)
 	ax.text(x_loading * scale_x * 1.08, y_loading * scale_y * 1.08, variable, color='darkred', fontsize=9, ha='center', va='center')
 
 ax.axhline(0, color='gray', linewidth=1)
