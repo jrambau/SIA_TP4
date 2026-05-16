@@ -11,6 +11,7 @@ from pca_pipeline import (
 	save_output,
 	plot_correlation_heatmap,
 	plot_pc1_loadings,
+	plot_pc2_loadings,
 	plot_pc1_ranking,
 	plot_biplot,
 )
@@ -64,6 +65,9 @@ print(loadings_pc2)
 # Graficamos los loadings para entender visualmente la influencia de cada variable
 fig = plot_pc1_loadings(loadings_pc1)
 save_output(fig, OUTPUT_DIR, 'pc1_loadings.png')
+
+fig = plot_pc2_loadings(loadings_pc2)
+save_output(fig, OUTPUT_DIR, 'pc2_loadings.png')
 
 # 5. Calcular los valores de la PC1 para cada país
 _, df_sorted = compute_sorted_pc1_dataframe(df, pca, df_scaled)

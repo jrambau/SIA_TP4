@@ -11,6 +11,7 @@ from .plotting import (
 	save_output,
 	plot_correlation_heatmap,
 	plot_pc1_loadings,
+	plot_pc2_loadings,
 	plot_pc1_ranking,
 	plot_biplot,
 )

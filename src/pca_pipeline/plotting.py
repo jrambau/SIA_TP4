@@ -32,6 +32,17 @@ def plot_pc1_loadings(loadings_pc1):
 	return fig
 
 
+def plot_pc2_loadings(loadings_pc2):
+	fig, ax = plt.subplots(figsize=(10, 5))
+	sns.barplot(x=loadings_pc2.values, y=loadings_pc2.index, hue=loadings_pc2.index, palette='mako', ax=ax, legend=False)
+	ax.set_title('Pesos de las variables originales en la PC2')
+	ax.set_xlabel('Carga (Loading)')
+	ax.set_ylabel('Variable')
+	ax.grid(axis='x', linestyle='--', alpha=0.7)
+	fig.tight_layout()
+	return fig
+
+
 def plot_pc1_ranking(df_sorted):
 	fig, ax = plt.subplots(figsize=(12, 8))
 	sns.barplot(x='PC1', y=df_sorted.index, data=df_sorted, hue=df_sorted.index, palette='coolwarm', ax=ax, legend=False)
