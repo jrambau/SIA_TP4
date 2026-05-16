@@ -20,6 +20,7 @@ def save_output(fig, filename):
 
 def main():
     # 1. Cargar y preparar datos
+    np.random.seed(42)  # Para reproducibilidad
     df = pd.read_csv(DATA_PATH)
     countries = df['Country'].values
     df.set_index('Country', inplace=True)
@@ -86,6 +87,36 @@ def main():
     sns.heatmap(count_matrix, cmap='Blues', annot=True, fmt="g", ax=ax, cbar_kws={'label': 'Cantidad de Países'})
     ax.set_title('Densidad de Agrupación: Cantidad de países por neurona')
     save_output(fig, 'som_density_map.png')
+    
+    # 6. Gráfico 4: Planos de Componentes (Observar una sola variable)
+    # Esto responde a la Diapositiva 37 de la teoría.
+    
+    feature_names = df.columns
+    num_features = len(feature_names)
+    
+    # Creamos una grilla de subplots (2 filas y 4 columnas para acomodar las 7 variables)
+    fig, axes = plt.subplots(2, 4, figsize=(16, 8))
+    axes = axes.flatten() # Aplanamos para iterar fácilmente
+    
+    for i in range(num_features):
+        ax = axes[i]
+        # La matriz de pesos de la red tiene tamaño (grid_y, grid_x, cantidad_variables)
+        # Extraemos la capa "i" que corresponde a la variable actual
+        feature_weights = som.weights[:, :, i]
+        
+        # Dibujamos el mapa de calor para esta variable específica
+        sns.heatmap(feature_weights, cmap='coolwarm', ax=ax, cbar=True)
+        ax.set_title(feature_names[i], fontsize=12)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        
+    # Borramos el último subplot que nos sobra (porque son 7 variables y 8 espacios)
+    for j in range(num_features, len(axes)):
+        fig.delaxes(axes[j])
+        
+    fig.suptitle('Planos de Componentes: Distribución de variables en la red SOM', fontsize=16)
+    plt.tight_layout()
+    save_output(fig, 'som_component_planes.png')
 
     # Imprimir un análisis por consola
     print("\n--- Análisis de la Red de Kohonen ---")
