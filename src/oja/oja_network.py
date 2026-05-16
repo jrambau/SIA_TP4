@@ -9,7 +9,7 @@ class OjaNetwork:
         if random_seed is not None:
             np.random.seed(random_seed)
             
-        # Según la teoría (diapositiva 15), inicializamos pesos con distribución 
+        # Inicializamos pesos con distribución 
         # uniforme entre 0 y 1.
         self.weights = np.random.uniform(0, 1, input_dim)
 

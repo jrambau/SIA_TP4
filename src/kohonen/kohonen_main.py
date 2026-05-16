@@ -89,8 +89,6 @@ def main():
     save_output(fig, 'som_density_map.png')
     
     # 6. Gráfico 4: Planos de Componentes (Observar una sola variable)
-    # Esto responde a la Diapositiva 37 de la teoría.
-    
     feature_names = df.columns
     num_features = len(feature_names)
     
