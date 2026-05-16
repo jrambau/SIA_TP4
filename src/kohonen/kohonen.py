@@ -1,7 +1,26 @@
 import numpy as np
 
 class KohonenSOM:
+    """Self-Organizing Map (Kohonen) with rectangular 2D grid topology."""
+
     def __init__(self, grid_y, grid_x, input_dim, learning_rate=0.1, radius=None, epochs=1000):
+        """Initialize SOM structure and training hyperparameters.
+
+        Parameters
+        ----------
+        grid_y : int
+            Number of rows in the neuron grid.
+        grid_x : int
+            Number of columns in the neuron grid.
+        input_dim : int
+            Dimensionality of each input sample.
+        learning_rate : float, optional
+            Initial learning rate.
+        radius : float or None, optional
+            Initial neighborhood radius. If None, defaults to half of max grid size.
+        epochs : int, optional
+            Number of training epochs.
+        """
         self.grid_y = grid_y
         self.grid_x = grid_x
         self.input_dim = input_dim
@@ -18,6 +37,7 @@ class KohonenSOM:
         self.grid_coords = np.c_[y.ravel(), x.ravel()].reshape((grid_y, grid_x, 2))
 
     def _get_bmu(self, x):
+        """Return the index (y, x) of the Best Matching Unit for input vector `x`."""
         # Calculate Euclidean distances between input x and all weights
         distances = np.linalg.norm(self.weights - x, axis=2)
         # Find the index of the minimum distance
@@ -25,6 +45,13 @@ class KohonenSOM:
         return bmu_idx
 
     def train(self, data):
+        """Train the SOM using online updates and Gaussian neighborhood decay.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Input data of shape (n_samples, input_dim).
+        """
         lambda_r = self.epochs / np.log(self.radius_0)
         
         for epoch in range(self.epochs):
@@ -52,12 +79,25 @@ class KohonenSOM:
                 self.weights += lr * neighborhood * (x - self.weights)
 
     def get_bmus(self, data):
+        """Compute BMU coordinates for each sample in `data`.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Input data of shape (n_samples, input_dim).
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            BMU grid coordinates for each input sample.
+        """
         bmus = []
         for x in data:
             bmus.append(self._get_bmu(x))
         return bmus
 
     def get_u_matrix(self):
+        """Return the U-Matrix (mean distance to neighboring neurons) for each neuron."""
         u_matrix = np.zeros((self.grid_y, self.grid_x))
         for y in range(self.grid_y):
             for x in range(self.grid_x):
