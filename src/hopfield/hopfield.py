@@ -42,7 +42,7 @@ class HopfieldNetwork:
 
             # Convergencia: El paso actual es idéntico al anterior
             if np.array_equal(state, prev_state):
-                print(f"   [Sincrónico] Convergió en iteración {iteration}")
+                #print(f"   [Sincrónico] Convergió en iteración {iteration}")
                 break
 
         return state.reshape(shape), history, energies

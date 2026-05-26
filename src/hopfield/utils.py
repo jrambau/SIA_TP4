@@ -48,12 +48,14 @@ def add_noise(pattern, noise_level=0.2):
         noisy[idx] *= -1
     return noisy.reshape(pattern.shape)
 
-def plot_recovery(original, ruidoso, recuperado, titulo, filename):
+def plot_recovery(original, ruidoso, recuperado, titulo, filename,
+                  input_label='Patrón Ruidoso (Entrada)',
+                  output_label='Patrón Recuperado (Salida)'):
     """Genera un gráfico comparativo: Original -> Ruidoso -> Recuperado"""
     fig, axes = plt.subplots(1, 3, figsize=(10, 4))
     
     imagenes = [original, ruidoso, recuperado]
-    titulos = ['Patrón Original', 'Patrón Ruidoso (Entrada)', 'Patrón Recuperado (Salida)']
+    titulos = ['Patrón Original', input_label, output_label]
     
     for ax, img, t in zip(axes, imagenes, titulos):
         ax.imshow(img, cmap='binary', vmin=-1, vmax=1)

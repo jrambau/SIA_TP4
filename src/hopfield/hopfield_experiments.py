@@ -1,6 +1,7 @@
 """
 Hopfield Network — Experimentos completos
 ==========================================
+Exp 0: Mundo del revés — A invertida como atractor espejo
 Exp 1: Consigna (a) — Recuperar 4 letras con ruido, mostrando cada paso
 Exp 2: Consigna (b) — Encontrar un estado espureo
 Exp 3: Variación — Letras muy similares (D, O, Q, C)
@@ -11,6 +12,7 @@ Exp 6: Variación — Comparación sincrónico vs asincrónico
 
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 import os
 import sys
 
@@ -27,6 +29,51 @@ from src.hopfield.utils import (
 )
 
 SEPARATOR = "=" * 70
+
+# ──────────────────────────────────────────────────────────────────────
+#  EXPERIMENTO 0 — Mundo del Revés: atractores espejo
+# ──────────────────────────────────────────────────────────────────────
+def experiment_0(alphabet):
+    print(f"\n{SEPARATOR}")
+    print("EXPERIMENTO 1 — Mundo del Revés")
+    print("Entrenar con A y pasar A invertida (−A) sin ruido.")
+    print(SEPARATOR)
+
+    pattern = alphabet["A"]
+    inverted_pattern = -pattern
+
+    net = HopfieldNetwork(num_neurons=25)
+    net.train([pattern])
+
+    recovered, history, energies = net.sync_predict(inverted_pattern)
+
+    exact_inverted = np.array_equal(recovered, inverted_pattern)
+    exact_original = np.array_equal(recovered, pattern)
+    print(f"  Entrada: −A")
+    print(f"  Recuperada: {'−A' if exact_inverted else 'otra'}")
+    print(f"  Coincide con −A: {'SI' if exact_inverted else 'NO'}")
+    print(f"  Coincide con A: {'SI' if exact_original else 'NO'}")
+
+    plot_recovery(
+        pattern,
+        inverted_pattern,
+        recovered,
+        "Exp 1 — A invertida como atractor espejo",
+        "exp1_mundo_del_reves.png",
+        input_label="Patrón invertido (Entrada)",
+        output_label="Salida de la red",
+    )
+    plot_step_by_step(
+        history,
+        "Exp 1 — Recuperación de A invertida",
+        "exp1_mundo_del_reves_steps.png",
+        energies=energies,
+    )
+    plot_energy_evolution(
+        energies,
+        "Exp 1 — Energía para A invertida",
+        "exp1_mundo_del_reves_energy.png",
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -370,23 +417,46 @@ def experiment_6(alphabet):
 # ──────────────────────────────────────────────────────────────────────
 #  MAIN
 # ──────────────────────────────────────────────────────────────────────
-def main():
+def main(selected_experiment=None):
     np.random.seed(42)
     alphabet = get_abc()
     plot_abc(alphabet)
 
-    experiment_1(alphabet)
-    experiment_2(alphabet)
-    experiment_3(alphabet)
-    experiment_4(alphabet)
-    experiment_5(alphabet)
-    experiment_6(alphabet)
+    experiments = {
+        0: experiment_0,
+        1: experiment_1,
+        2: experiment_2,
+        3: experiment_3,
+        4: experiment_4,
+        5: experiment_5,
+        6: experiment_6,
+    }
+
+    if selected_experiment is None:
+        for exp_id in sorted(experiments):
+            experiments[exp_id](alphabet)
+    else:
+        experiments[selected_experiment](alphabet)
 
     print(f"\n{SEPARATOR}")
-    print("¡Todos los experimentos completados!")
+    if selected_experiment is None:
+        print("¡Todos los experimentos completados!")
+    else:
+        print(f"¡Experimento {selected_experiment} completado!")
     print(f"Resultados en: outputs/hopfield/")
     print(SEPARATOR)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Ejecutar uno o todos los experimentos de Hopfield."
+    )
+    parser.add_argument(
+        "experiment",
+        nargs="?",
+        type=int,
+        choices=range(0, 7),
+        help="Número de experimento a ejecutar (0-6). Si se omite, ejecuta todos.",
+    )
+    args = parser.parse_args()
+    main(args.experiment)
