@@ -22,22 +22,22 @@ def create_pattern(ascii_art):
         matriz.append(fila)
     return np.array(matriz)
 
-# def ortogonality_test(nombres, patrones):
-#     """Calcula y muestra la matriz de ortogonalidad (Producto Punto)"""
-#     print(f"\n--- MATRIZ DE ORTOGONALIDAD: {', '.join(nombres)} ---")
-#     num_patterns = len(patrones)
-    
-#     header = "      " + "  ".join(f"{n:^4}" for n in nombres)
-#     print(header)
-#     print("-" * len(header))
-    
-#     for i in range(num_patterns):
-#         row_str = f"{nombres[i]:^4}|"
-#         for j in range(num_patterns):
-#             dot_product = np.dot(patrones[i].flatten(), patrones[j].flatten())
-#             row_str += f"{dot_product:^6}"
-#         print(row_str)
-#     print("-" * len(header))
+def orthogonality_test(names, patterns):
+    """Calcula y muestra la matriz de ortogonalidad (producto punto)."""
+    print(f"\n--- MATRIZ DE ORTOGONALIDAD: {', '.join(names)} ---")
+    num_patterns = len(patterns)
+
+    header = "      " + "  ".join(f"{name:^4}" for name in names)
+    print(header)
+    print("-" * len(header))
+
+    for i in range(num_patterns):
+        row_str = f"{names[i]:^4}|"
+        for j in range(num_patterns):
+            dot_product = np.dot(patterns[i].flatten(), patterns[j].flatten())
+            row_str += f"{dot_product:^6}"
+        print(row_str)
+    print("-" * len(header))
 
 def add_noise(pattern, noise_level=0.2):
     """Invierte un porcentaje (noise_level) de los píxeles de un patrón."""
