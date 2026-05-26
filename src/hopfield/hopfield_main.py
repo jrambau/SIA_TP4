@@ -22,7 +22,7 @@ def main():
 
     test_pattern = alphabet["L"]
     noisy_pattern = add_noise(test_pattern, noise_level=0.1)
-    recovered_pattern = network.sync_predict(noisy_pattern)
+    recovered_pattern, history, energies = network.sync_predict(noisy_pattern)
 
     plot_recovery(
         test_pattern,
@@ -32,7 +32,7 @@ def main():
         "hopfield_learning_demo.png",
     )
 
-    print("Hopfield network initialized and trained with base patterns: A, I, O, L.")
+    print("Hopfield network initialized and trained with base patterns: A, L, O, W.")
     print("One recovery experiment completed for pattern L.")
 
 
