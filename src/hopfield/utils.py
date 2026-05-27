@@ -113,8 +113,12 @@ def plot_energy_evolution(energies, title, filename):
     """Grafica la evolución de la energía por paso."""
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(range(len(energies)), energies, 'o-', color='#e74c3c', linewidth=2, markersize=6)
+    
     ax.set_xlabel("Paso")
     ax.set_ylabel("Energía")
+    
+    ax.set_xticks(range(len(energies)))
+    
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -122,7 +126,6 @@ def plot_energy_evolution(energies, title, filename):
     plt.savefig(out_path, dpi=150)
     print(f"Gráfico de energía guardado: {out_path}")
     plt.close()
-
 def is_spurious(state, patterns, tolerance=0):
     """
     Verifica si un estado es espureo: no coincide con ninguno de los

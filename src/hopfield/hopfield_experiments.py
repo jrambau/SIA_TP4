@@ -13,6 +13,7 @@ Exp 6: Variación — Comparación sincrónico vs asincrónico
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+import csv
 import os
 import sys
 
@@ -83,10 +84,10 @@ def experiment_0(alphabet):
 def experiment_1(alphabet):
     print(f"\n{SEPARATOR}")
     print("EXPERIMENTO 1 — Consigna (a)")
-    print("Almacenar {A, L, O, W}. Recuperar con ruido. Mostrar cada paso.")
+    print("Almacenar {I, J, O, R}. Recuperar con ruido. Mostrar cada paso.")
     print(SEPARATOR)
 
-    letters = ["A", "L", "O", "W"]
+    letters = ["I", "J", "O", "R"]
     patterns = [alphabet[l] for l in letters]
     orthogonality_test(letters, patterns)
 
@@ -125,7 +126,7 @@ def experiment_1(alphabet):
         ok = np.array_equal(recovered, pattern)
         results.append((letter, pattern, noisy, recovered, ok))
 
-    plot_multi_recovery(results, "Exp 1 — Recuperación de {A,L,O,W} con 20% ruido",
+    plot_multi_recovery(results, "Exp 1 — Recuperación de {I,J,O,R} con 20% ruido",
                         "exp1_summary_20pct.png")
 
 
@@ -138,7 +139,7 @@ def experiment_2(alphabet):
     print("Ingresar un patrón muy ruidoso e identificar un estado espureo.")
     print(SEPARATOR)
 
-    letters = ["A", "L", "O", "W"]
+    letters = ["I", "J", "O", "R"]
     patterns = [alphabet[l] for l in letters]
 
     net = HopfieldNetwork(num_neurons=25)
@@ -243,11 +244,11 @@ def experiment_2(alphabet):
 # ──────────────────────────────────────────────────────────────────────
 def experiment_3(alphabet):
     print(f"\n{SEPARATOR}")
-    print("EXPERIMENTO 3 — Variación: Letras similares {D, O, Q, C}")
+    print("EXPERIMENTO 3 — Variación: Letras similares {H, M, N, W}")
     print("Demostrar confusión entre patrones de baja ortogonalidad.")
     print(SEPARATOR)
 
-    letters = ["D", "O", "Q", "C"]
+    letters = ["H", "M", "N", "W"]
     patterns = [alphabet[l] for l in letters]
     orthogonality_test(letters, patterns)
 
@@ -256,7 +257,7 @@ def experiment_3(alphabet):
 
     results = []
     for letter, pattern in zip(letters, patterns):
-        noisy = add_noise(pattern, noise_level=0.2)
+        noisy = add_noise(pattern, noise_level=0.0)
         recovered, history, energies = net.sync_predict(noisy)
         ok = np.array_equal(recovered, pattern)
         closest, hamming, _ = find_closest_pattern(recovered, letters, patterns)
@@ -264,7 +265,7 @@ def experiment_3(alphabet):
         print(f"  {letter} -> {tag} (Hamming al mas cercano: {hamming})")
         results.append((letter, pattern, noisy, recovered, ok))
 
-    plot_multi_recovery(results, "Exp 3 — Letras similares {D,O,Q,C} con 20% ruido",
+    plot_multi_recovery(results, "Exp 3 — Letras similares {H,M,N,W} con 0% ruido",
                         "exp3_similar_letters.png")
 
 
@@ -310,15 +311,20 @@ def experiment_5(alphabet):
     print("EXPERIMENTO 5 — Capacidad: ¿cuántos patrones puede almacenar?")
     print("Aumentar de 4 a 10 y medir tasa de recuperación.")
     print(SEPARATOR)
-
     all_letters = list(alphabet.keys())
-    num_stored_list = [4, 5, 6, 7, 8, 9, 10, 12, 15]
-    accuracy_list = []
-    trials = 20  # repeticiones por configuración
+    num_stored_list = [1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 15]
+    trials = 80  # repeticiones por configuración (aumentar para más estabilidad)
+
+    summary_means = []
+    summary_stds = []
+    best_combos = []
+
+    out_rows = []
 
     for n_stored in num_stored_list:
-        correct_total = 0
-        test_total = 0
+        per_trial_acc = []  # accuracy per trial for this n
+        best_combo = None
+        best_combo_score = -1.0
 
         for _ in range(trials):
             # Elegir n_stored letras al azar
@@ -329,21 +335,68 @@ def experiment_5(alphabet):
             net.train(patterns)
 
             # Probar recuperación de cada patrón con 20% ruido
+            correct_in_trial = 0
             for pat in patterns:
                 noisy = add_noise(pat, noise_level=0.2)
                 recovered, _, _ = net.sync_predict(noisy, max_iterations=20)
                 if np.array_equal(recovered, pat):
-                    correct_total += 1
-                test_total += 1
+                    correct_in_trial += 1
 
-        acc = 100.0 * correct_total / test_total
-        accuracy_list.append(acc)
-        print(f"  {n_stored} patrones: {acc:.1f}% correcto "
-              f"({correct_total}/{test_total})")
+            acc_trial = 100.0 * correct_in_trial / n_stored
+            per_trial_acc.append(acc_trial)
 
-    plot_capacity_results(num_stored_list, accuracy_list,
-                          "exp5_capacity_test.png")
+            # track best combo observed
+            if acc_trial > best_combo_score:
+                best_combo_score = acc_trial
+                best_combo = ("".join(chosen), int(correct_in_trial), n_stored)
 
+        mean_acc = float(np.mean(per_trial_acc))
+        std_acc = float(np.std(per_trial_acc))
+        summary_means.append(mean_acc)
+        summary_stds.append(std_acc)
+        best_combos.append((best_combo, best_combo_score))
+
+        out_rows.append((n_stored, mean_acc, std_acc, best_combo[0], best_combo[1], best_combo[2]))
+        print(f"  {n_stored} patrones: media={mean_acc:.1f}% std={std_acc:.1f}% "
+              f"(mejor combo observado: {best_combo[0]} -> {best_combo_score:.1f}% [{best_combo[1]}/{best_combo[2]}])")
+
+    # Save CSV with summarized results
+    out_csv = get_hopfield_output_path('exp5_capacity_results.csv')
+    with open(out_csv, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['n_stored', 'mean_acc_pct', 'std_acc_pct', 'best_combo', 'best_combo_correct', 'best_combo_n'])
+        for row in out_rows:
+            writer.writerow(row)
+    print(f"Saved capacity summary to {out_csv}")
+
+# Plot mean +/- std
+    fig, ax = plt.subplots(figsize=(8, 5))
+    x = np.array(num_stored_list)
+    
+    # 1. Calculamos los errores asimétricos para no pasarnos de 0 ni de 100
+    means = np.array(summary_means)
+    stds = np.array(summary_stds)
+    lower_error = np.minimum(stds, means) 
+    upper_error = np.minimum(stds, 100.0 - means)
+    errores_asimetricos = [lower_error, upper_error]
+
+    # 2. Graficamos con los nuevos errores asimétricos
+    ax.errorbar(x, means, yerr=errores_asimetricos, fmt='-o', color='#2c3e50', ecolor='#95a5a6', capsize=4)
+    ax.set_xlabel('Número de patrones almacenados')
+    ax.set_ylabel('Recuperación media (%)')
+    ax.set_title('Prueba de capacidad: recuperación media ± std (20% ruido)')
+    
+    # 3. Bloqueamos el eje Y para que el gráfico quede prolijo
+    ax.set_ylim(-5, 105)
+
+    # 4. Anotamos los porcentajes justo arriba del límite superior del error
+    for xi, m, ue in zip(x, means, upper_error):
+        ax.text(xi, m + ue + 2, f'{m:.1f}%', ha='center', fontsize=9)
+
+    plt.tight_layout()
+    out_png = get_hopfield_output_path('exp5_capacity_summary.png')
+    plt.savefig(out_png, dpi=150)
+    print(f"Saved capacity plot to {out_png}")
 
 # ──────────────────────────────────────────────────────────────────────
 #  EXPERIMENTO 6 — Sincrónico vs Asincrónico
