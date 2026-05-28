@@ -55,7 +55,7 @@ def plot_pc1_ranking(df_sorted):
 	return fig
 
 
-def plot_biplot(df, explained_variance_ratio, biplot_data):
+def plot_biplot(df, explained_variance_ratio, biplot_data, title='Biplot de PCA: Países y Variables en PC1 vs PC2'):
 	score_x = biplot_data['score_x']
 	score_y = biplot_data['score_y']
 	loading_x = biplot_data['loading_x']
@@ -63,24 +63,20 @@ def plot_biplot(df, explained_variance_ratio, biplot_data):
 	scale_x = biplot_data['scale_x']
 	scale_y = biplot_data['scale_y']
 	country_positions = biplot_data['country_positions']
-	country_refs = biplot_data['country_refs']
 
 	fig, ax = plt.subplots(figsize=(12, 9))
 	ax.scatter(score_x, score_y, color='steelblue', alpha=0.7, s=45)
-	fig.subplots_adjust(right=0.80)
 
 	country_labels = []
-	for ref_number, (_, x_coord, y_coord) in enumerate(country_positions, start=1):
+	for country, x_coord, y_coord in country_positions:
 		label = ax.text(
 			x_coord,
 			y_coord,
-			str(ref_number),
+			country,
 			fontsize=7,
-			fontweight='bold',
 			color='black',
-			ha='center',
-			va='center',
-			bbox=dict(facecolor='white', alpha=0.85, edgecolor='none', boxstyle='round,pad=0.15'),
+			ha='left',
+			va='bottom',
 		)
 		country_labels.append(label)
 
@@ -95,21 +91,6 @@ def plot_biplot(df, explained_variance_ratio, biplot_data):
 		lim=250,
 		ensure_inside_axes=True,
 	)
-
-	legend_x_left = 0.79
-	legend_x_right = 0.90
-	legend_y_start = 0.88
-	legend_line_step = 0.022
-	half = (len(country_refs) + 1) // 2
-	left_items = list(country_refs.items())[:half]
-	right_items = list(country_refs.items())[half:]
-
-	fig.text(legend_x_left, legend_y_start + 0.03, 'Referencias', fontsize=9, fontweight='bold', ha='left', va='top')
-	for row_index, (ref_number, country) in enumerate(left_items):
-		fig.text(legend_x_left, legend_y_start - row_index * legend_line_step, f'{ref_number}. {country}', fontsize=6.5, ha='left', va='top')
-
-	for row_index, (ref_number, country) in enumerate(right_items):
-		fig.text(legend_x_right, legend_y_start - row_index * legend_line_step, f'{ref_number}. {country}', fontsize=6.5, ha='left', va='top')
 
 	for variable, x_loading, y_loading in zip(df.columns, loading_x, loading_y):
 		ax.arrow(0, 0, x_loading * scale_x, y_loading * scale_y, color='darkred', alpha=0.75, head_width=0.06, length_includes_head=True)
