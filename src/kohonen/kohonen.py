@@ -39,8 +39,8 @@ class KohonenSOM:
         self.track_qe = track_qe
         self.qe_history = []
         
-        # Initialize weights (except for PCA, which needs data)
-        if init_method != 'pca':
+        # Initialize weights (except for methods that need data)
+        if init_method not in ('pca', 'sample'):
             self._init_weights()
         
         # Grid of coordinates for easy distance calculation
@@ -55,6 +55,11 @@ class KohonenSOM:
         elif self.init_method == 'uniform':
             # Random uniform initialization in [-1, 1]
             self.weights = np.random.uniform(-1, 1, (self.grid_y, self.grid_x, self.input_dim))
+        elif self.init_method == 'sample' and data is not None:
+            # Initialize each neuron with a random sample from the training data
+            n_neurons = self.grid_y * self.grid_x
+            indices = np.random.choice(data.shape[0], size=n_neurons, replace=True)
+            self.weights = data[indices].reshape(self.grid_y, self.grid_x, self.input_dim)
         elif self.init_method == 'pca' and data is not None:
             # PCA-based initialization: span grid along first two principal components
             mean = data.mean(axis=0)
@@ -105,8 +110,8 @@ class KohonenSOM:
         data : np.ndarray
             Input data of shape (n_samples, input_dim).
         """
-        # If PCA init, do it now that we have data
-        if self.init_method == 'pca':
+        # If data-dependent init, do it now that we have data
+        if self.init_method in ('pca', 'sample'):
             self._init_weights(data)
         
         if self.radius_0 > 1:

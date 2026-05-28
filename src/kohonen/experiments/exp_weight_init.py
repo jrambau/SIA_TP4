@@ -1,8 +1,9 @@
 """Experimento 5: Tipo de Inicialización de Pesos
 ==================================================
-Compara tres estrategias de inicialización de pesos:
+Compara cuatro estrategias de inicialización de pesos:
 - Normal (N(0,1)) — la que usamos por defecto
 - Uniforme (U(-1,1))
+- Muestras del dataset — cada neurona se inicializa con un dato de entrada al azar
 - PCA — inicializa la grilla sobre los dos primeros componentes principales
 Analiza:
 - Velocidad de convergencia (curvas QE)
@@ -21,10 +22,11 @@ def main():
 
     grid_size = 4
     epochs = 5000
-    init_methods = ['normal', 'uniform', 'pca']
+    init_methods = ['normal', 'uniform', 'sample', 'pca']
     init_labels = {
         'normal': 'Normal N(0,1)',
         'uniform': 'Uniforme U(-1,1)',
+        'sample': 'Muestras del dataset',
         'pca': 'PCA',
     }
     results = {}
@@ -51,7 +53,7 @@ def main():
 
     # ── Gráfico 1: Curvas de convergencia ────────────────────────────────────
     fig, ax = plt.subplots(figsize=(12, 6))
-    colors = {'normal': '#2196F3', 'uniform': '#FF9800', 'pca': '#4CAF50'}
+    colors = {'normal': '#2196F3', 'uniform': '#FF9800', 'sample': '#9C27B0', 'pca': '#4CAF50'}
 
     for method in init_methods:
         r = results[method]
@@ -66,7 +68,8 @@ def main():
     save_figure(fig, 'exp5_weight_init_convergence.png')
 
     # ── Gráfico 2: Mapas de países ───────────────────────────────────────────
-    fig, axes = plt.subplots(1, 3, figsize=(22, 8))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 16))
+    axes = axes.flatten()
 
     for ax, method in zip(axes, init_methods):
         r = results[method]
@@ -82,7 +85,8 @@ def main():
     save_figure(fig, 'exp5_weight_init_maps.png')
 
     # ── Gráfico 3: U-Matrices ────────────────────────────────────────────────
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    axes = axes.flatten()
 
     for ax, method in zip(axes, init_methods):
         u_matrix = results[method]['som'].get_u_matrix()

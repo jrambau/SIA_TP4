@@ -32,7 +32,7 @@ def main():
     # 2. Configurar y entrenar la red SOM
     # Para 28 países, una grilla de 4x4 o 5x5 es un buen tamaño.
     grid_size = 4
-    som = KohonenSOM(grid_y=grid_size, grid_x=grid_size, input_dim=X_scaled.shape[1], epochs=5000, learning_rate=0.1)
+    som = KohonenSOM(grid_y=grid_size, grid_x=grid_size, input_dim=X_scaled.shape[1], epochs=5000, learning_rate=0.1, init_method='sample')
     
     print("Entrenando red de Kohonen (SOM)...")
     som.train(X_scaled)
