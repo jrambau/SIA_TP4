@@ -58,8 +58,13 @@ class KohonenSOM:
         elif self.init_method == 'sample' and data is not None:
             # Initialize each neuron with a random sample from the training data
             n_neurons = self.grid_y * self.grid_x
-            indices = np.random.choice(data.shape[0], size=n_neurons, replace=True)
-            self.weights = data[indices].reshape(self.grid_y, self.grid_x, self.input_dim)
+            # Elegimos índices al azar del dataset. 
+            # replace=False asegura que no elijamos el mismo país/dato dos veces (si hay suficientes datos)
+            replace_flag = data.shape[0] < n_neurons
+            random_indices = np.random.choice(data.shape[0], size=n_neurons, replace=replace_flag)
+            
+            # Tomamos esos ejemplos reales y le damos la forma de nuestra grilla
+            self.weights = data[random_indices].reshape((self.grid_y, self.grid_x, self.input_dim))
         elif self.init_method == 'pca' and data is not None:
             # PCA-based initialization: span grid along first two principal components
             mean = data.mean(axis=0)
@@ -90,8 +95,8 @@ class KohonenSOM:
             tau = self.epochs / 5
             return self.lr_0 * np.exp(-epoch / tau)
         elif self.lr_decay == 'inverse':
-            tau = self.epochs / 5
-            return self.lr_0 / (1 + epoch / tau)
+            # Alineado a Diapo 27: eta(i) = 1/i (usamos epoch + 1 para evitar div por 0)
+            return self.lr_0 / (epoch + 1)
         return self.lr_0
 
     def _get_bmu(self, x):
@@ -124,7 +129,11 @@ class KohonenSOM:
         for epoch in range(self.epochs):
             # Update learning rate and radius
             lr = self._get_learning_rate(epoch)
+            # Alineado a Diapo 26: R(i) -> 1 cuando i -> inf
             radius = self.radius_0 * np.exp(-epoch / lambda_r)
+            if radius < 1.0: 
+                radius = 1.0 # Aseguramos que el límite sea 1 como dice la presentación
+
             
             # Shuffle data to avoid order bias
             indices = np.arange(data.shape[0])
@@ -132,18 +141,35 @@ class KohonenSOM:
             
             for idx in indices:
                 x = data[idx]
+
+                # 2. ENCONTRAR LA NEURONA GANADORA (Diapo 25, Paso 2)
                 bmu = self._get_bmu(x)
                 
-                # Calculate distance from BMU to all other neurons in the grid
+                # Calcular distancia  ||n - n_k||
                 dist_to_bmu = np.linalg.norm(self.grid_coords - np.array(bmu), axis=2)
-                
+                #======================================================
                 # Calculate neighborhood function (Gaussian)
-                neighborhood = np.exp(-(dist_to_bmu**2) / (2 * (radius**2)))
+                #neighborhood = np.exp(-(dist_to_bmu**2) / (2 * (radius**2))) NO SE USA PERO LA DEJAMOS POR SI QUEREMOS USARLO DSP
                 
                 # Update weights
                 # Reshape neighborhood to broadcast over input_dim
-                neighborhood = neighborhood[:, :, np.newaxis]
-                self.weights += lr * neighborhood * (x - self.weights)
+                #neighborhood = neighborhood[:, :, np.newaxis]
+                #self.weights += lr * neighborhood * (x - self.weights)
+                #======================================================
+                
+                #ACA SERIA COMO ESTA HECHO EN DIAPOSITIVAS
+                # 3. REGLA DE KOHONEN ALINEADA A DIAPO 26 Y 27
+                # Diapo 26: N_k(i) = {n / ||n - n_k|| < R(i)}
+                # Creamos una máscara: 1.0 si es menor estricto que el radio, 0.0 si está afuera
+                neighborhood_mask = (dist_to_bmu < radius).astype(float)
+                
+                # Expandimos dimensiones para multiplicar por los pesos
+                neighborhood_mask = neighborhood_mask[:, :, np.newaxis]
+                
+                # Diapo 27: 
+                # Si j pertenece a N_k(i) -> W + lr * (X - W)
+                # Si j NO pertenece       -> W + 0  (queda igual)
+                self.weights += lr * neighborhood_mask * (x - self.weights)
             
             # Track quantization error if requested
             if self.track_qe:
