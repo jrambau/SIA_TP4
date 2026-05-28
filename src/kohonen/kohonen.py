@@ -3,7 +3,8 @@ import numpy as np
 class KohonenSOM:
     """Self-Organizing Map (Kohonen) with rectangular 2D grid topology."""
 
-    def __init__(self, grid_y, grid_x, input_dim, learning_rate=0.1, radius=None, epochs=1000):
+    def __init__(self, grid_y, grid_x, input_dim, learning_rate=0.1, radius=None, epochs=1000,
+                 init_method='normal', lr_decay='linear', track_qe=False):
         """Initialize SOM structure and training hyperparameters.
 
         Parameters
@@ -20,6 +21,12 @@ class KohonenSOM:
             Initial neighborhood radius. If None, defaults to half of max grid size.
         epochs : int, optional
             Number of training epochs.
+        init_method : str, optional
+            Weight initialization method: 'normal', 'uniform', or 'pca'.
+        lr_decay : str, optional
+            Learning rate decay strategy: 'linear', 'exponential', or 'inverse'.
+        track_qe : bool, optional
+            If True, compute and store quantization error after each epoch.
         """
         self.grid_y = grid_y
         self.grid_x = grid_x
@@ -27,14 +34,60 @@ class KohonenSOM:
         self.lr_0 = learning_rate
         self.radius_0 = radius if radius is not None else max(grid_y, grid_x) / 2
         self.epochs = epochs
+        self.init_method = init_method
+        self.lr_decay = lr_decay
+        self.track_qe = track_qe
+        self.qe_history = []
         
-        # Initialize weights with random values from a normal distribution
-        # Since data will be scaled to zero mean and unit variance
-        self.weights = np.random.normal(0, 1, (grid_y, grid_x, input_dim))
+        # Initialize weights (except for PCA, which needs data)
+        if init_method != 'pca':
+            self._init_weights()
         
         # Grid of coordinates for easy distance calculation
         y, x = np.mgrid[0:grid_y, 0:grid_x]
         self.grid_coords = np.c_[y.ravel(), x.ravel()].reshape((grid_y, grid_x, 2))
+
+    def _init_weights(self, data=None):
+        """Initialize weight vectors according to the chosen strategy."""
+        if self.init_method == 'normal':
+            # Random normal initialization (good for standardized data)
+            self.weights = np.random.normal(0, 1, (self.grid_y, self.grid_x, self.input_dim))
+        elif self.init_method == 'uniform':
+            # Random uniform initialization in [-1, 1]
+            self.weights = np.random.uniform(-1, 1, (self.grid_y, self.grid_x, self.input_dim))
+        elif self.init_method == 'pca' and data is not None:
+            # PCA-based initialization: span grid along first two principal components
+            mean = data.mean(axis=0)
+            centered = data - mean
+            cov = np.cov(centered.T)
+            eigenvalues, eigenvectors = np.linalg.eigh(cov)
+            # Sort by descending eigenvalue
+            idx = np.argsort(eigenvalues)[::-1]
+            eigenvectors = eigenvectors[:, idx]
+            eigenvalues = eigenvalues[idx]
+            
+            pc1 = eigenvectors[:, 0] * np.sqrt(abs(eigenvalues[0]))
+            pc2 = eigenvectors[:, 1] * np.sqrt(abs(eigenvalues[1]))
+            
+            y_range = np.linspace(-1, 1, self.grid_y)
+            x_range = np.linspace(-1, 1, self.grid_x)
+            
+            self.weights = np.zeros((self.grid_y, self.grid_x, self.input_dim))
+            for i, y_val in enumerate(y_range):
+                for j, x_val in enumerate(x_range):
+                    self.weights[i, j] = mean + y_val * pc1 + x_val * pc2
+
+    def _get_learning_rate(self, epoch):
+        """Compute the learning rate for the given epoch using the chosen decay strategy."""
+        if self.lr_decay == 'linear':
+            return self.lr_0 * (1 - epoch / self.epochs)
+        elif self.lr_decay == 'exponential':
+            tau = self.epochs / 5
+            return self.lr_0 * np.exp(-epoch / tau)
+        elif self.lr_decay == 'inverse':
+            tau = self.epochs / 5
+            return self.lr_0 / (1 + epoch / tau)
+        return self.lr_0
 
     def _get_bmu(self, x):
         """Return the index (y, x) of the Best Matching Unit for input vector `x`."""
@@ -52,11 +105,20 @@ class KohonenSOM:
         data : np.ndarray
             Input data of shape (n_samples, input_dim).
         """
-        lambda_r = self.epochs / np.log(self.radius_0)
+        # If PCA init, do it now that we have data
+        if self.init_method == 'pca':
+            self._init_weights(data)
+        
+        if self.radius_0 > 1:
+            lambda_r = self.epochs / np.log(self.radius_0)
+        else:
+            lambda_r = self.epochs  # Avoid log of values <= 1
+        
+        self.qe_history = []
         
         for epoch in range(self.epochs):
             # Update learning rate and radius
-            lr = self.lr_0 * (1 - epoch / self.epochs)
+            lr = self._get_learning_rate(epoch)
             radius = self.radius_0 * np.exp(-epoch / lambda_r)
             
             # Shuffle data to avoid order bias
@@ -77,6 +139,11 @@ class KohonenSOM:
                 # Reshape neighborhood to broadcast over input_dim
                 neighborhood = neighborhood[:, :, np.newaxis]
                 self.weights += lr * neighborhood * (x - self.weights)
+            
+            # Track quantization error if requested
+            if self.track_qe:
+                qe = self.compute_quantization_error(data)
+                self.qe_history.append(qe)
 
     def get_bmus(self, data):
         """Compute BMU coordinates for each sample in `data`.
@@ -95,6 +162,54 @@ class KohonenSOM:
         for x in data:
             bmus.append(self._get_bmu(x))
         return bmus
+
+    def compute_quantization_error(self, data):
+        """Compute the average Euclidean distance from each input to its BMU.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Input data of shape (n_samples, input_dim).
+
+        Returns
+        -------
+        float
+            Mean quantization error.
+        """
+        total = 0
+        for x in data:
+            bmu = self._get_bmu(x)
+            total += np.linalg.norm(x - self.weights[bmu[0], bmu[1]])
+        return total / len(data)
+
+    def compute_topographic_error(self, data):
+        """Fraction of inputs whose second BMU is not adjacent to the first BMU.
+
+        Measures how well the SOM preserves the topology of the input space.
+        A value of 0 means perfect topology preservation.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Input data of shape (n_samples, input_dim).
+
+        Returns
+        -------
+        float
+            Topographic error in [0, 1].
+        """
+        errors = 0
+        for x in data:
+            distances = np.linalg.norm(self.weights - x, axis=2)
+            flat_indices = np.argsort(distances.ravel())
+            bmu1 = np.unravel_index(flat_indices[0], distances.shape)
+            bmu2 = np.unravel_index(flat_indices[1], distances.shape)
+            
+            # Check if bmu2 is a neighbor of bmu1 (Manhattan distance <= 1)
+            grid_dist = abs(bmu1[0] - bmu2[0]) + abs(bmu1[1] - bmu2[1])
+            if grid_dist > 1:
+                errors += 1
+        return errors / len(data)
 
     def get_u_matrix(self):
         """Return the U-Matrix (mean distance to neighboring neurons) for each neuron."""
