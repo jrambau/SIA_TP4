@@ -3,7 +3,7 @@ Hopfield Network — Experimentos completos
 ==========================================
 Exp 0: Mundo del revés — A invertida como atractor espejo
 Exp 1: Consigna (a) — Recuperar 4 letras con ruido, mostrando cada paso
-Exp 2: Consigna (b) — Encontrar un estado espureo
+Exp 2: Consigna (b) — Encontrar un estado espurio
 Exp 3: Variación — Letras muy similares (D, O, Q, C)
 Exp 4: Variación — Letras ortogonales (T, X, L, O)
 Exp 5: Variación — Saturación de capacidad (4→10 patrones)
@@ -76,7 +76,50 @@ def experiment_0(alphabet):
         "exp1_mundo_del_reves_energy.png",
     )
 
+# ──────────────────────────────────────────────────────────────────────
+#  EXPERIMENTO a — Encontrar la A sencillamente
+# ──────────────────────────────────────────────────────────────────────
+def experiment_10(alphabet):
+    print(f"\n{SEPARATOR}")
+    print("EXPERIMENTO 1 — Mundo del Revés")
+    print("Entrenar con A y pasar A")
+    print(SEPARATOR)
 
+    pattern = alphabet["A"]
+
+    net = HopfieldNetwork(num_neurons=25)
+    net.train([pattern])
+
+    recovered, history, energies = net.sync_predict(pattern)
+
+    exact_inverted = np.array_equal(recovered, pattern)
+    exact_original = np.array_equal(recovered, pattern)
+    print(f"  Entrada: A")
+    print(f"  Recuperada: {'A' if exact_original else 'otra'}")
+    print(f"  Coincide con A: {'SI' if exact_inverted else 'NO'}")
+    print(f"  Coincide con A: {'SI' if exact_original else 'NO'}")
+
+    plot_recovery(
+        pattern,
+        pattern,
+        recovered,
+        "Exp 1 — A como atractor",
+        "exp1_mundo_del_reves.png",
+        input_label="Patrón (Entrada)",
+        output_label="Salida de la red",
+    )
+    plot_step_by_step(
+        history,
+        "Exp 1 — Recuperación de A",
+        "exp1_mundo_del_reves_steps.png",
+        energies=energies,
+    )
+    plot_energy_evolution(
+        energies,
+        "Exp 1 — Energía para A",
+        "exp1_mundo_del_reves_energy.png",
+    )
+    
 # ──────────────────────────────────────────────────────────────────────
 #  EXPERIMENTO 1 — Consigna (a): Almacenar 4 patrones, recuperar con
 #  ruido mostrando cada paso
@@ -131,15 +174,15 @@ def experiment_1(alphabet):
 
 
 # ──────────────────────────────────────────────────────────────────────
-#  EXPERIMENTO 2 — Consigna (b): Encontrar un estado espureo
+#  EXPERIMENTO 2 — Consigna (b): Encontrar un estado espurio
 # ──────────────────────────────────────────────────────────────────────
 def experiment_2(alphabet):
     print(f"\n{SEPARATOR}")
     print("EXPERIMENTO 2 — Consigna (b)")
-    print("Ingresar un patrón muy ruidoso e identificar un estado espureo.")
+    print("Ingresar un patrón muy ruidoso e identificar un estado espurio.")
     print(SEPARATOR)
 
-    letters = ["I", "J", "O", "R"]
+    letters = ["A", "L", "O", "W"]
     patterns = [alphabet[l] for l in letters]
 
     net = HopfieldNetwork(num_neurons=25)
@@ -157,21 +200,26 @@ def experiment_2(alphabet):
         if is_spurious(recovered, patterns):
             closest, hamming, dot = find_closest_pattern(
                 recovered, letters, patterns)
-            print(f"  ¡ESTADO ESPUREO encontrado! (intento {attempt+1})")
+            print(f"  ¡ESTADO ESPURIO encontrado! (intento {attempt+1})")
             print(f"    Base: {letters[idx]} con {int(nl*100)}% ruido")
             print(f"    Más cercano a '{closest}' (Hamming={hamming}, dot={dot})")
             print(f"    Energía final: {energies[-1]:.4f}")
 
             plot_spurious_comparison(
                 patterns, letters, noisy, recovered,
-                f"Estado Espureo (base={letters[idx]}, ruido={int(nl*100)}%)",
+                f"Estado Espurio (base={letters[idx]}, ruido={int(nl*100)}%)",
                 "exp2_spurious_state.png",
             )
             plot_step_by_step(
                 history,
-                f"Pasos hacia estado espureo (base={letters[idx]})",
+                f"Pasos hacia estado espurio (base={letters[idx]})",
                 "exp2_spurious_steps.png",
                 energies=energies,
+            )
+            plot_energy_evolution(
+                energies,
+                f"Energía hacia estado espurio (base={letters[idx]}, ruido={int(nl*100)}%)",
+                "exp2_spurious_energy.png",
             )
             found = True
             break
@@ -187,21 +235,26 @@ def experiment_2(alphabet):
                 recovered, history, energies = net.sync_predict(mix, max_iterations=30)
 
                 if is_spurious(recovered, patterns):
-                    print(f"  ¡ESTADO ESPUREO con mezcla {letters[i]}+{letters[j]}!")
+                    print(f"  ¡ESTADO ESPURIO con mezcla {letters[i]}+{letters[j]}!")
                     closest, hamming, dot = find_closest_pattern(
                         recovered, letters, patterns)
                     print(f"    Más cercano a '{closest}' (Hamming={hamming})")
 
                     plot_spurious_comparison(
                         patterns, letters, mix, recovered,
-                        f"Estado Espureo (mezcla {letters[i]}+{letters[j]})",
+                        f"Estado Espurio (mezcla {letters[i]}+{letters[j]})",
                         "exp2_spurious_state.png",
                     )
                     plot_step_by_step(
                         history,
-                        f"Pasos hacia espureo (mezcla {letters[i]}+{letters[j]})",
+                        f"Pasos hacia espurio (mezcla {letters[i]}+{letters[j]})",
                         "exp2_spurious_steps.png",
                         energies=energies,
+                    )
+                    plot_energy_evolution(
+                        energies,
+                        f"Energía hacia espurio (mezcla {letters[i]}+{letters[j]})",
+                        "exp2_spurious_energy.png",
                     )
                     found = True
                     break
@@ -218,25 +271,30 @@ def experiment_2(alphabet):
             if is_spurious(recovered, patterns):
                 closest, hamming, dot = find_closest_pattern(
                     recovered, letters, patterns)
-                print(f"  ¡ESTADO ESPUREO con patrón aleatorio! (intento {attempt+1})")
+                print(f"  ¡ESTADO ESPURIO con patrón aleatorio! (intento {attempt+1})")
                 print(f"    Más cercano a '{closest}' (Hamming={hamming})")
 
                 plot_spurious_comparison(
                     patterns, letters, random_pat, recovered,
-                    "Estado Espureo (patrón aleatorio)",
+                    "Estado Espurio (patrón aleatorio)",
                     "exp2_spurious_state.png",
                 )
                 plot_step_by_step(
                     history,
-                    "Pasos hacia espureo (patrón aleatorio)",
+                    "Pasos hacia espurio (patrón aleatorio)",
                     "exp2_spurious_steps.png",
                     energies=energies,
+                )
+                plot_energy_evolution(
+                    energies,
+                    "Energía hacia espurio (patrón aleatorio)",
+                    "exp2_spurious_energy.png",
                 )
                 found = True
                 break
 
     if not found:
-        print("  No se encontró estado espureo en los intentos realizados.")
+        print("  No se encontró estado espurio en los intentos realizados.")
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -483,6 +541,7 @@ def main(selected_experiment=None):
         4: experiment_4,
         5: experiment_5,
         6: experiment_6,
+        10: experiment_10,
     }
 
     if selected_experiment is None:
@@ -508,7 +567,7 @@ if __name__ == "__main__":
         "experiment",
         nargs="?",
         type=int,
-        choices=range(0, 7),
+        choices=range(0, 11),
         help="Número de experimento a ejecutar (0-6). Si se omite, ejecuta todos.",
     )
     args = parser.parse_args()

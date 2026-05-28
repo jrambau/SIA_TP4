@@ -28,9 +28,7 @@ class KohonenSOM:
         self.radius_0 = radius if radius is not None else max(grid_y, grid_x) / 2
         self.epochs = epochs
         
-        # Initialize weights with random values from a normal distribution
-        # Since data will be scaled to zero mean and unit variance
-        self.weights = np.random.normal(0, 1, (grid_y, grid_x, input_dim))
+        self.weights = None
         
         # Grid of coordinates for easy distance calculation
         y, x = np.mgrid[0:grid_y, 0:grid_x]
@@ -45,19 +43,34 @@ class KohonenSOM:
         return bmu_idx
 
     def train(self, data):
-        """Train the SOM using online updates and Gaussian neighborhood decay.
-
-        Parameters
-        ----------
-        data : np.ndarray
-            Input data of shape (n_samples, input_dim).
-        """
+        """Train the SOM using exact rules from Slide 26 and 27."""
+        
+        # --- NUEVO BLOQUE DE INICIALIZACIÓN ---
+        # Si es la primera vez que se llama a train, inicializamos los pesos
+        if self.weights is None:
+            num_neurons = self.grid_y * self.grid_x
+            
+            # Elegimos índices al azar del dataset. 
+            # replace=False asegura que no elijamos el mismo país/dato dos veces (si hay suficientes datos)
+            replace_flag = data.shape[0] < num_neurons
+            random_indices = np.random.choice(data.shape[0], size=num_neurons, replace=replace_flag)
+            
+            # Tomamos esos ejemplos reales y le damos la forma de nuestra grilla
+            self.weights = data[random_indices].reshape((self.grid_y, self.grid_x, self.input_dim))
+        # --------------------------------------
+        
+        # Factor de decaimiento para el radio (se mantiene exponencial para cumplir que R(i)->1)
         lambda_r = self.epochs / np.log(self.radius_0)
         
         for epoch in range(self.epochs):
-            # Update learning rate and radius
-            lr = self.lr_0 * (1 - epoch / self.epochs)
+            # 1. ACTUALIZACIÓN DE TASA DE APRENDIZAJE Y RADIO
+            # Alineado a Diapo 27: Por ejemplo eta(i) = 1/i (usamos epoch + 1 para evitar div por 0)
+            lr = self.lr_0 / (epoch + 1)
+            
+            # Alineado a Diapo 26: R(i) -> 1 cuando i -> inf
             radius = self.radius_0 * np.exp(-epoch / lambda_r)
+            if radius < 1.0: 
+                radius = 1.0 # Aseguramos que el límite sea 1 como dice la presentación
             
             # Shuffle data to avoid order bias
             indices = np.arange(data.shape[0])
@@ -65,18 +78,25 @@ class KohonenSOM:
             
             for idx in indices:
                 x = data[idx]
+                
+                # 2. ENCONTRAR LA NEURONA GANADORA (Diapo 25, Paso 2)
                 bmu = self._get_bmu(x)
                 
-                # Calculate distance from BMU to all other neurons in the grid
+                # Calcular distancia  ||n - n_k||
                 dist_to_bmu = np.linalg.norm(self.grid_coords - np.array(bmu), axis=2)
                 
-                # Calculate neighborhood function (Gaussian)
-                neighborhood = np.exp(-(dist_to_bmu**2) / (2 * (radius**2)))
+                # 3. REGLA DE KOHONEN ALINEADA A DIAPO 26 Y 27
+                # Diapo 26: N_k(i) = {n / ||n - n_k|| < R(i)}
+                # Creamos una máscara: 1.0 si es menor estricto que el radio, 0.0 si está afuera
+                neighborhood_mask = (dist_to_bmu < radius).astype(float)
                 
-                # Update weights
-                # Reshape neighborhood to broadcast over input_dim
-                neighborhood = neighborhood[:, :, np.newaxis]
-                self.weights += lr * neighborhood * (x - self.weights)
+                # Expandimos dimensiones para multiplicar por los pesos
+                neighborhood_mask = neighborhood_mask[:, :, np.newaxis]
+                
+                # Diapo 27: 
+                # Si j pertenece a N_k(i) -> W + lr * (X - W)
+                # Si j NO pertenece       -> W + 0  (queda igual)
+                self.weights += lr * neighborhood_mask * (x - self.weights)
 
     def get_bmus(self, data):
         """Compute BMU coordinates for each sample in `data`.

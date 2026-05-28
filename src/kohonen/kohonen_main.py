@@ -20,7 +20,7 @@ def save_output(fig, filename):
 
 def main():
     # 1. Cargar y preparar datos
-    np.random.seed(42)  # Para reproducibilidad
+    #np.random.seed(42)  # Para reproducibilidad
     df = pd.read_csv(DATA_PATH)
     countries = df['Country'].values
     df.set_index('Country', inplace=True)

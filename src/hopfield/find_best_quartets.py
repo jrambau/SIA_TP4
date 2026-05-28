@@ -125,30 +125,32 @@ if __name__ == '__main__':
 
     x = np.arange(len(labels))
     width = 0.6
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(x, corrects, width, label='Correcto', color='#2ecc71')
     ax.bar(x, incorrects, width, bottom=corrects, label='Incorrecto', color='#e74c3c')
     ax.set_ylabel('Ensayos (correctos / incorrectos)')
-    ax.set_title(f'Top {top_k}: recuento de recuperaciones y tasa de éxito (20% ruido)', pad=24, fontsize=14)
+    ax.set_title(f'Top {top_k}: recuento de recuperaciones y tasa de éxito (20% ruido)', pad=18, fontsize=14)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=45, fontsize=10)
 
-    # Leave extra headroom so the percent labels do not collide with the title.
-    ymax = max(totals) + 20
+    # adjust layout to leave space for the title and percent labels
+    ymax = max(totals) + 4
     ax.set_ylim(0, ymax)
+    fig.subplots_adjust(top=0.88)
 
-    # Place legend at bottom-left, with enough room for the rotated x labels.
+    # place legend at bottom-left, add bottom margin so it doesn't overlap x labels
     ax.legend(loc='lower left', bbox_to_anchor=(0.02, 0.02), fontsize=10)
+    fig.subplots_adjust(bottom=0.15)
 
     # annotate each bar: percent above bar (not touching title) and counts inside
     for i, (c, t) in enumerate(zip(corrects, totals)):
         pct = 100.0 * c / t if t > 0 else 0.0
         # percent label slightly above the top of the stacked bar
-        ax.text(i, t + 2.5, f'{pct:.1f}%', ha='center', va='bottom', fontsize=9)
+        ax.text(i, t + 0.6, f'{pct:.1f}%', ha='center', va='bottom', fontsize=9)
         # counts inside the green portion (correct)
         ax.text(i, max(0.6, c / 2), f'{c}/{t}', ha='center', va='center', color='white', fontsize=9)
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.92])
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     out_png = get_hopfield_output_path('best_quartets_accuracy.png')
     plt.savefig(out_png, dpi=150)
     print(f"Saved accuracy plot to {out_png}")

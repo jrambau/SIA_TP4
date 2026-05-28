@@ -128,7 +128,7 @@ def plot_energy_evolution(energies, title, filename):
     plt.close()
 def is_spurious(state, patterns, tolerance=0):
     """
-    Verifica si un estado es espureo: no coincide con ninguno de los
+    Verifica si un estado es espurio: no coincide con ninguno de los
     patrones almacenados (ni con su inverso).
     tolerance: cantidad de bits diferentes permitidos (0 = coincidencia exacta).
     """
@@ -164,9 +164,9 @@ def find_closest_pattern(state, pattern_names, patterns):
 def plot_spurious_comparison(original_patterns, pattern_names, noisy_input,
                               recovered, title, filename):
     """
-    Plot especial para mostrar un estado espureo:
+    Plot especial para mostrar un estado espurio:
     Fila 1: patrones almacenados
-    Fila 2: entrada ruidosa → recuperado (espureo)
+    Fila 2: entrada ruidosa → recuperado (espurio)
     """
     n_pat = len(original_patterns)
     cols = max(n_pat, 2)
@@ -194,7 +194,7 @@ def plot_spurious_comparison(original_patterns, pattern_names, noisy_input,
 
     ax_out = axes[1][1]
     ax_out.imshow(recovered, cmap='binary', vmin=-1, vmax=1)
-    ax_out.set_title("Estado ESPUREO", fontsize=10, color='red', fontweight='bold')
+    ax_out.set_title("Estado ESPURIO", fontsize=10, color='red', fontweight='bold')
     ax_out.set_xticks(np.arange(-0.5, 5, 1), minor=True)
     ax_out.set_yticks(np.arange(-0.5, 5, 1), minor=True)
     ax_out.grid(which='minor', color='gray', linestyle='-', linewidth=0.5)
@@ -207,7 +207,7 @@ def plot_spurious_comparison(original_patterns, pattern_names, noisy_input,
     plt.tight_layout()
     out_path = get_hopfield_output_path(filename)
     plt.savefig(out_path, dpi=150)
-    print(f"Gráfico espureo guardado: {out_path}")
+    print(f"Gráfico espurio guardado: {out_path}")
     plt.close()
 
 def plot_capacity_results(num_stored_list, accuracy_list, filename):
