@@ -95,9 +95,27 @@ def main():
     for i, v in enumerate(te_vals):
         axes[1].text(i, v + 0.005, f'{v:.3f}', ha='center', fontsize=9)
 
-    fig.suptitle('Métricas de Calidad por Radio Inicial', fontsize=14, fontweight='bold')
+    fig.suptitle('Metricas de Calidad por Radio Inicial', fontsize=14, fontweight='bold')
     plt.tight_layout()
     save_figure(fig, 'exp3_radius_metrics.png')
+
+    # ── Gráfico 4: Densidad (cantidad de países por neurona) ─────────────────
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    axes = axes.flatten()
+
+    for ax, label in zip(axes, radius_labels):
+        r = results[label]
+        bmus = r['som'].get_bmus(X_scaled)
+        count_matrix = np.zeros((grid_size, grid_size))
+        for (y, x) in bmus:
+            count_matrix[y, x] += 1
+        sns.heatmap(count_matrix, cmap='Blues', annot=True, fmt='g', ax=ax,
+                    cbar_kws={'label': 'Cantidad de paises'})
+        ax.set_title(f'Densidad  |  Radio = {label}')
+
+    fig.suptitle('Densidad de Agrupacion por Radio Inicial', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    save_figure(fig, 'exp3_radius_density.png')
 
     print("\n[OK] Experimento 3 completado. Graficos guardados.")
 

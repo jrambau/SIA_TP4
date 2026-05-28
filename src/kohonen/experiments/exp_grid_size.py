@@ -108,6 +108,23 @@ def main():
     plt.tight_layout()
     save_figure(fig, 'exp1_grid_size_umatrix.png')
 
+    # ── Gráfico 4: Densidad (cantidad de países por neurona) ─────────────────
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    axes = axes.flatten()
+
+    for ax, size in zip(axes, grid_sizes):
+        bmus = results[size]['som'].get_bmus(X_scaled)
+        count_matrix = np.zeros((size, size))
+        for (y, x) in bmus:
+            count_matrix[y, x] += 1
+        sns.heatmap(count_matrix, cmap='Blues', annot=True, fmt='g', ax=ax,
+                    cbar_kws={'label': 'Cantidad de paises'})
+        ax.set_title(f'Densidad {size}x{size}')
+
+    fig.suptitle('Densidad de Agrupacion por Tamaño de Grilla', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    save_figure(fig, 'exp1_grid_size_density.png')
+
     print("\n[OK] Experimento 1 completado. Graficos guardados.")
 
 
