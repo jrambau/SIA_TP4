@@ -11,6 +11,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 
+# IMPORTANTE: Instalar con 'pip install adjustText'
+try:
+    from adjustText import adjust_text
+    HAS_ADJUST_TEXT = True
+except ImportError:
+    HAS_ADJUST_TEXT = False
+    print("Advertencia: Se recomienda 'pip install adjustText' para evitar superposición de textos.")
+
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR.parent.parent.parent / 'data' / 'europe.csv'
 OUTPUT_DIR = BASE_DIR.parent.parent.parent / 'outputs' / 'kohonen' / 'experiments'
@@ -36,6 +44,7 @@ def load_data():
     df.set_index('Country', inplace=True)
     feature_names = df.columns
     
+    # Fundamental: Estandarizar vectores para que las medidas de similitud (ej. Euclidiana) funcionen correctamente.
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df)
     
@@ -45,48 +54,48 @@ def load_data():
 def save_figure(fig, filename):
     """Save a matplotlib figure to the experiments output directory."""
     output_path = OUTPUT_DIR / filename
-    fig.savefig(output_path, dpi=150, bbox_inches='tight')
-    print(f'Gráfico guardado en {output_path}')
+    fig.savefig(output_path, dpi=300, bbox_inches='tight') # Subido a 300 dpi para calidad 4K en PPT
+    print(f'[Utils] Gráfico guardado en {output_path}')
     plt.close(fig)
 
 
-def draw_country_map(ax, som, X_scaled, countries, grid_y, grid_x, fontsize=7):
-    """Draw the country assignment map on a given axes.
-    
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        Axes to draw on.
-    som : KohonenSOM
-        Trained SOM.
-    X_scaled : np.ndarray
-        Standardized data.
-    countries : np.ndarray
-        Country names.
-    grid_y, grid_x : int
-        Grid dimensions.
-    fontsize : int
-        Font size for country labels.
+def draw_country_map(ax, som, X_scaled, countries, grid_y, grid_x, base_fontsize=10):
+    """
+    Dibuja el mapa de asignación de países con texto centrado y tamaño dinámico.
     """
     bmus = som.get_bmus(X_scaled)
     
-    grid_countries = {}
-    for y in range(grid_y):
-        for x in range(grid_x):
-            grid_countries[(y, x)] = []
+    # Agrupamos países por BMU
+    grid_countries = {(y, x): [] for y in range(grid_y) for x in range(grid_x)}
     for country, bmu in zip(countries, bmus):
         grid_countries[bmu].append(country)
     
+    # Configuramos la grilla visual
     ax.set_xlim(-0.5, grid_x - 0.5)
     ax.set_ylim(grid_y - 0.5, -0.5)
+    
+    # Dibujamos las líneas separadoras de las neuronas
     ax.set_xticks(np.arange(-0.5, grid_x, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, grid_y, 1), minor=True)
-    ax.grid(which='minor', color='gray', linestyle='-', linewidth=2)
+    ax.grid(which='minor', color='black', linestyle='-', linewidth=1, alpha=0.3)
     ax.set_xticks([])
     ax.set_yticks([])
     
+    # Recorremos la grilla y distribuimos los países
     for (y, x), country_list in grid_countries.items():
         if country_list:
+            # Ordenamos alfabéticamente para mayor prolijidad en la lectura
+            country_list.sort()
+            
+            # Unimos los nombres con un salto de línea
             text = "\n".join(country_list)
-            ax.text(x, y, text, ha='center', va='center', fontsize=fontsize,
-                    bbox=dict(facecolor='lightyellow', alpha=0.8, edgecolor='gray'))
+            
+            # Ajuste dinámico de fuente: a mayor cantidad de países, letra más chica
+            # Base = 10. Restamos 0.8 por cada país extra, con un mínimo de 4 pts.
+            n_countries = len(country_list)
+            dynamic_fontsize = max(4.0, base_fontsize - (n_countries * 0.8))
+            
+            # Colocamos el texto exactamente en el centro de la neurona (discreto)
+            ax.text(x, y, text, fontsize=dynamic_fontsize, 
+                    ha='center', va='center', weight='semibold',
+                    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
