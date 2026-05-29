@@ -79,14 +79,23 @@ def main():
     
     colors = sns.color_palette('viridis', len(grid_sizes))
 
+    # CREAMOS EL ERROR ASIMÉTRICO
+    # Hacia abajo: el mínimo entre el desvío y la media (para que nunca de negativo)
+    te_lower = np.minimum(te_m, te_s)
+    # Hacia arriba: el desvío estándar normal
+    te_upper = te_s
+    te_error_asimetrico = [te_lower, te_upper]  
+
     # Graficamos con yerr (barras de error)
     axes[0].bar(sizes_labels, qe_m, yerr=qe_s, color=colors, capsize=5, alpha=0.9)
     axes[0].set_title('Error de Cuantización (QE)')
     axes[0].set_ylabel('QE Promedio')
     
-    axes[1].bar(sizes_labels, te_m, yerr=te_s, color=colors, capsize=5, alpha=0.9)
+    # Graficamos con el nuevo error asimétrico
+    axes[1].bar(sizes_labels, te_m, yerr=te_error_asimetrico, color=colors, capsize=5, alpha=0.9)
     axes[1].set_title('Error Topográfico (TE)')
     axes[1].set_ylabel('TE Promedio')
+    axes[1].set_ylim(bottom=0)  # Forzamos que el eje Y arranque estrictamente en cero  
 
     axes[2].bar(sizes_labels, ut_m, yerr=ut_s, color=colors, capsize=5, alpha=0.9)
     axes[2].set_title('Utilización de Neuronas')
