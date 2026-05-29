@@ -236,8 +236,8 @@ class KohonenSOM:
             bmu1 = np.unravel_index(flat_indices[0], distances.shape)
             bmu2 = np.unravel_index(flat_indices[1], distances.shape)
             
-            # Check if bmu2 is a neighbor of bmu1 (Manhattan distance <= 1)
-            grid_dist = abs(bmu1[0] - bmu2[0]) + abs(bmu1[1] - bmu2[1])
+            # Check if bmu2 is an 8-neighbor of bmu1 (Chebyshev distance <= 1) --> "Cuantos movimientos necesita un rey de ajederez para ir de una casilla a otra (diag = 1)"
+            grid_dist = max(abs(bmu1[0] - bmu2[0]), abs(bmu1[1] - bmu2[1]))
             if grid_dist > 1:
                 errors += 1
         return errors / len(data)
